@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="../src/styles/zoomPan.css">
+	<style>
+.zoompan-box {
+	position: relative;
+	/*border: 3px solid #eee;*/
+	border-radius: 2px;
+	width: 300px;
+	height: 225px;
+	overflow: hidden;
+
+	-webkit-transition: margin-left 1s, margin-top 1s;
+	-o-transition: margin-left 1s, margin-top 1s;
+	transition: margin-left 1s, margin-top 1s;
+}
+.zoompan-box.zp-pan {
+	cursor: move;
+}
+
+	</style>
+</head>
+<body>
+	<div class="zoompan-box">
+		<img src="../src/images/your_image.jpg" alt="your_image" width="300" height="225" draggable="false">
+	</div>
+	
+	<script src="../src/scripts/zoomPan.js"></script>
+	<script>
+// help functions
+function $ (s, el) {
+	return (el || document).querySelector(s);
+}
+function $$ (ss, el) {
+	return (el || document).querySelector(ss);
+}
+function addClass (el, cls) {
+	if (el.classList)
+	  el.classList.add(cls);
+	else
+	  el.className += ' ' + cls;
+	return el;
+}
+function removeClass (el, cls) {
+	if (el.classList)
+	  el.classList.remove(cls);
+	else
+	  el.className = el.className.replace(new RegExp('(^|\\b)' + cls.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+	return el;
+}
+function getStyle (el, s) {
+	var styles = getComputedStyle(el);
+	if (s) {
+		return styles[s];
+	}
+	return styles;
+}
+
+function ready(fn) {
+  if (document.readyState != 'loading'){
+    fn();
+  } else {
+    document.addEventListener('DOMContentLoaded', fn);
+  }
+}
+// set values
+var box = $('.zoompan-box');
+var image = $('img', box);
+var isMouseDown = false;
+var isZoomOut = false;
+var zoomFactor = 10;
+var boxSize, naturalSize, imageSize;
+
+
+function getNaturalSize (image) {
+	if (typeof image.naturalWidth !== 'undefined') {
+		return {
+			width: image.naturalWidth,
+			height: image.naturalHeight
+		};
+	} else {
+		// todo
+	}
+}
+function getImageSize (image) {
+	return {
+		width: image.clientWidth,
+		height: image.clientHeight
+	};
+}
+
+function initSize() {
+	naturalSize = getNaturalSize(image);
+	imageSize = getImageSize(image);
+	// boxSize = getImageSize(image);
+	boxSize = box.getBoundingClientRect();
+	// console.log(boxSize);
+}
+if (image.loaded || image.complete) {
+	initSize();
+} else {
+	image.addEventListener('load', initSize);
+}
+
+box.addEventListener('mousedown', function () {
+	setIsMouseDown(true);
+});
+document.addEventListener('mouseup', function () {
+	setIsMouseDown(false);
+});
+function setIsMouseDown (state) {
+	isMouseDown = state;
+}
+
+box.addEventListener('mousewheel', function (event) {
+	var e = event || window.event;
+	e.preventDefault();
+	var delta = getWheelDelta(e);
+	var zoomPoint = {
+		x: e.pageX - boxSize.left,
+		y: e.pageY - boxSize.top
+	};
+	imageSize = reSize(imageSize, delta, zoomFactor);
+	setImageStyle(image, boxSize, imageSize, naturalSize, zoomPoint);
+	if ( imageSize.width > boxSize.width ) {
+		isZoomOut = true;
+	} else {
+		isZoomOut = false;
+	}
+});
+function getWheelDelta (evt) {
+	var w=evt.wheelDelta, d=evt.detail;
+	if (d){
+	  if (w) return w/d/40*d>0?1:-1; // Opera
+	  else return -d/3;              // Firefox;         TODO: do not /3 for OS X
+	} else return w/120;             // IE/Safari/Chrome TODO: /3 for Chrome OS X
+}
+function reSize (imgSize, z, factor) {
+	var iWidth = imgSize.width;
+	var iHeight = imgSize.height;
+	var proportion = iWidth / iHeight;
+	factor = typeof factor === 'number'? factor : 10;
+
+	return {
+		width: iWidth + z*proportion * factor,
+		height: iHeight + z * factor
+	};
+}
+
+function setImageStyle (img, boxSize, imageSize, naturalSize, zoomPoint) {
+	var bWidth = boxSize.width;
+	var bHeight =boxSize.height;
+	var iWidth = imageSize.width;
+	var iHeight = imageSize.height;
+	var offsetX = parseInt(getStyle(image, 'marginLeft'));
+	var offsetY = parseInt(getStyle(image, 'marginTop'));
+	var deltaX, deltaY, cssText;
+	if ( iHeight > bWidth ) {
+		imageSize.width = Math.min(iWidth, naturalSize.width);
+		imageSize.height = Math.min(iHeight, naturalSize.height);
+	} else {
+		imageSize.width = Math.max(iWidth, bWidth);
+		imageSize.height = Math.max(iHeight, bHeight);
+	}
+
+	iWidth = imageSize.width;
+	iHeight = imageSize.height;
+	deltaX = (bWidth - iWidth)/ ( bWidth / zoomPoint.x);
+	deltaY = (bHeight - iHeight)/ (( bHeight / zoomPoint.y));
+
+	cssText = 'width:'+ imageSize.width + 'px;' +
+		'height:'+imageSize.height + 'px;margin-left:' + deltaX +
+			'px;margin-top:' + deltaY + 'px;';
+	img.style.cssText = cssText;
+
+	return box;
+}
+
+	</script>
+</body>
+</html>
