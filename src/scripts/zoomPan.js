@@ -103,7 +103,9 @@ var ZoomPan = (function() {
 		}
 	}
 	function getImageSize (image) {
-		// var box = image.getBoundingClientRect();
+		if ( typeof image.getBoundingClientRect === 'function' ) {
+			return image.getBoundingClientRect();
+		}
 		return {
 			width: image.width,
 			height: image.height
