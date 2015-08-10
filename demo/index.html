@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="../src/styles/zoomPan.css">
+	<style>
+.zoompan-box {
+	position: relative;
+	/*border: 3px solid #eee;*/
+	border-radius: 2px;
+	overflow: hidden;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+}
+.zoompan-box.zp-canmove {
+	cursor: move;
+}
+#zp1 {
+	width: 300px;
+	height: 225px;
+}
+#zp2 {
+	width: 300px;
+	height: 370px;
+}
+	</style>
+</head>
+<body>
+	<div class="zoompan-box" id="zp1">
+		<img src="../src/images/your_image.jpg" alt="your_image" width="300">
+	</div>
+	<div class="zoompan-box" id="zp2">
+		<img src="../src/images/grimm-peahen.jpg" alt="your_image" width="300">
+	</div>
+	
+	<script src="../src/scripts/zoomPan.js"></script>
+	<script>
+// help functions
+function gid(id) {
+	return document.getElementById(id);
+}
+var box1 = gid('zp1');
+var box2 = gid('zp2');
+
+var zp1 = new ZoomPan({
+	box: box1
+});
+var zp2 = new ZoomPan({
+	box: box2
+});
+
+	</script>
+</body>
+</html>
