@@ -170,18 +170,14 @@ var ZoomPan = (function() {
 			this.options.imageSize = getImageSize(image);
 			this.options.boxSize = (function () {
 				var size = box.getBoundingClientRect();
-				if (size.width) {
-					return size;
-				} else {
-					return {
-						width: box.clientWidth,
-						height: box.clientHeight,
-						left: size.left,
-						right: size.right,
-						top: size.top,
-						bottom: size.bottom
-					};
-				}
+				return {
+					width: box.clientWidth,
+					height: box.clientHeight,
+					top: size.top + document.body.scrollTop,
+					left: size.left + document.body.scrollLeft,
+					right: size.right,
+					bottom: size.bottom
+				};
 			}());
 		},
 
@@ -321,3 +317,7 @@ var ZoomPan = (function() {
 
 	return ZoomPan;
 }());
+
+if (typeof module !== 'undefined' && typeof exports !== 'undefined') {
+	module.exports = ZoomPan;
+}
