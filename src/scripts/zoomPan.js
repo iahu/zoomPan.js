@@ -103,9 +103,9 @@ var ZoomPan = (function() {
 		}
 	}
 	function getImageSize (image) {
-		if ( typeof image.getBoundingClientRect === 'function' ) {
-			return image.getBoundingClientRect();
-		}
+		// if ( typeof image.getBoundingClientRect === 'function' ) {
+		// 	return image.getBoundingClientRect();
+		// }
 		return {
 			width: image.width,
 			height: image.height
@@ -126,8 +126,7 @@ var ZoomPan = (function() {
 		this.options = extend({
 			box: null,
 			zoomFactor: 10,
-			xDirect: 1,
-			yDrict: 1,
+			rotateDeg: 0,
 			onZoom: function () {},
 			onMove: function () {}
 		}, options);
@@ -217,22 +216,22 @@ var ZoomPan = (function() {
 			function mouseScrollHanler(event) {
 				var e = event || window.event;
 				e.preventDefault();
-
+				// todo 支持旋转缩放
 				var delta = getWheelDelta(e);
-				var zoomPoint = {
-					x: e.pageX - opts.boxSize.left,
-					y: e.pageY - opts.boxSize.top
-				};
-				that.zoom.call(that, delta, zoomPoint);
+				// var zoomPoint = {
+				// 	x: e.pageX - opts.boxSize.left,
+				// 	y: e.pageY - opts.boxSize.top
+				// };
+				that.zoom.call(that, delta);
 				return false;
 			}
 
 			addEvent(box, 'dragstart', function (event) {
 				var e = event || window.event;
+				e.preventDefault();
 				if (  event.target === opts.image ) {
 					return false;
 				}
-				e.preventDefault();
 			});
 			addEvent(box, 'mousemove', function(event) {
 				if( event.target !== opts.image ) {return false;}
@@ -242,8 +241,27 @@ var ZoomPan = (function() {
 				var e = event || window.event;
 				var pointX = e.pageX - opts.boxSize.left;
 				var pointY = e.pageY - opts.boxSize.top;
-				var offsetX = parseInt(opts.image.style.marginLeft) + pointX-diff.x;
-				var offsetY = parseInt(opts.image.style.marginTop) +  pointY-diff.y;
+				var offsetX, offsetY;
+				switch(opts.rotateDeg/90 % 4) {
+					case 0:
+						offsetX = (pointX-diff.x);
+						offsetY = (pointY-diff.y);
+						break;
+					case 1:
+						offsetX = (pointY-diff.y);
+						offsetY = -(pointX-diff.x);
+						break;
+					case 2:
+						offsetX = -(pointX-diff.x);
+						offsetY = -(pointY-diff.y);
+						break;
+					case 3:
+						offsetX = -(pointY-diff.y);
+						offsetY = (pointX-diff.x);
+						break;
+				}
+				offsetX += parseInt(opts.image.style.marginLeft);
+				offsetY += parseInt(opts.image.style.marginTop);
 				diff.x = pointX;
 				diff.y = pointY;
 
@@ -267,6 +285,10 @@ var ZoomPan = (function() {
 				}
 			} else {
 				opts.isZoomOut = 0;
+				if ( opts.naturalSize.width === opts.boxSize.width &&
+					opts.naturalSize.height === opts.boxSize.height ) {
+					opts.isZoomOut = -1;
+				}
 			}
 			this.options.onZoom.call(this, delta);
 		},
@@ -289,7 +311,6 @@ var ZoomPan = (function() {
 			var iHeight = imgSize.height;
 			var proportion = iWidth / iHeight;
 			factor = typeof factor === 'number'? factor : 10;
-
 			return {
 				width: iWidth + z*proportion * factor,
 				height: iHeight + z * factor
@@ -298,7 +319,7 @@ var ZoomPan = (function() {
 
 		setImageStyle: function (img, boxSize, imageSize, naturalSize, zoomPoint) {
 			var bWidth = boxSize.width;
-			var bHeight =boxSize.height;
+			var bHeight = boxSize.height;
 			var iWidth = imageSize.width;
 			var iHeight = imageSize.height;
 			var offsetX = parseInt(getStyle(img, 'marginLeft')) || 0;
