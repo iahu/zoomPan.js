@@ -216,7 +216,7 @@ var ZoomPan = (function() {
 			function mouseScrollHanler(event) {
 				var e = event || window.event;
 				e.preventDefault();
-				// todo 支持旋转缩放
+				// todo 鏀寔鏃嬭浆缂╂斁
 				var delta = getWheelDelta(e);
 				// var zoomPoint = {
 				// 	x: e.pageX - opts.boxSize.left,
@@ -369,7 +369,9 @@ var ZoomPan = (function() {
 
 	return ZoomPan;
 }());
+require('./zp');
 
 if (typeof module !== 'undefined' && typeof exports !== 'undefined') {
 	module.exports = ZoomPan;
 }
+window.ZoomPan = ZoomPan;
