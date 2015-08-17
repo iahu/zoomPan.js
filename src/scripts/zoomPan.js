@@ -127,6 +127,8 @@ var ZoomPan = (function() {
 			box: null,
 			zoomFactor: 10,
 			rotateDeg: 0,
+			minScale: 1,
+			maxScale: 10,
 			onZoom: function () {},
 			onMove: function () {}
 		}, options);
@@ -143,6 +145,7 @@ var ZoomPan = (function() {
 		extend(this.options, {
 			isMouseDown: false,
 			isZoomOut: 0,
+			zoomScale: 1,
 			canMove: false,
 			diff: null,
 			boxSize: null,
@@ -218,11 +221,11 @@ var ZoomPan = (function() {
 				e.preventDefault();
 				// todo 支持旋转缩放
 				var delta = getWheelDelta(e);
-				// var zoomPoint = {
-				// 	x: e.pageX - opts.boxSize.left,
-				// 	y: e.pageY - opts.boxSize.top
-				// };
-				that.zoom.call(that, delta);
+				var zoomPoint = {
+					x: e.pageX - opts.boxSize.left,
+					y: e.pageY - opts.boxSize.top
+				};
+				that.zoom.call(that, delta, zoomPoint);
 				return false;
 			}
 
@@ -268,6 +271,18 @@ var ZoomPan = (function() {
 				that.move(offsetX, offsetY);
 			});
 		},
+		setIsMouseDown: function (state) {
+			this.options.isMouseDown = state;
+		},
+
+		setIsCanMove: function (s) {
+			this.options.canMove = s;
+			if (s === true) {
+				addClass(this.options.box, 'zp-canmove');
+			} else {
+				removeClass(this.options.box, 'zp-canmove');
+			}
+		},
 
 		zoom: function (delta, zoomPoint) {
 			var opts = this.options;
@@ -275,10 +290,12 @@ var ZoomPan = (function() {
 				x: opts.boxSize.width/2,
 				y: opts.boxSize.height/2
 			};
-			opts.imageSize = this.reSize(opts.imageSize, delta, opts.zoomFactor);
-			this.setImageStyle(opts.image, opts.boxSize, opts.imageSize, opts.naturalSize, zoomPoint);
-			if ( opts.imageSize.width > opts.boxSize.width ) {
-				if (opts.imageSize.width >= opts.naturalSize.width) {
+			opts.lastZoomScale = opts.zoomScale;
+			opts.zoomScale += delta / 10;
+			opts.zoomScale = +opts.zoomScale.toFixed(2);
+			this.setImageStyle(opts, zoomPoint);
+			if ( opts.image.width > opts.boxSize.width ) {
+				if (opts.image.width >= opts.naturalSize.width) {
 					opts.isZoomOut = 2;
 				} else {
 					opts.isZoomOut = 1;
@@ -293,57 +310,35 @@ var ZoomPan = (function() {
 			this.options.onZoom.call(this, delta);
 		},
 
-		setIsMouseDown: function (state) {
-			this.options.isMouseDown = state;
-		},
-
-		setIsCanMove: function (s) {
-			this.options.canMove = s;
-			if (s === true) {
-				addClass(this.options.box, 'zp-canmove');
-			} else {
-				removeClass(this.options.box, 'zp-canmove');
-			}
-		},
-
-		reSize:function (imgSize, z, factor) {
-			var iWidth = imgSize.width;
-			var iHeight = imgSize.height;
-			var proportion = iWidth / iHeight;
-			factor = typeof factor === 'number'? factor : 10;
-			return {
-				width: iWidth + z*proportion * factor,
-				height: iHeight + z * factor
-			};
-		},
-
-		setImageStyle: function (img, boxSize, imageSize, naturalSize, zoomPoint) {
+		setImageStyle: function (opts, zoomPoint) {
+			var img = opts.image;
+			var boxSize = opts.boxSize;
+			var imageSize = opts.imageSize;
+			var naturalSize = opts.naturalSize;
+			opts.zoomScale = Math.min(opts.maxScale, Math.max(opts.minScale, opts.zoomScale));
+			var zoomScale = opts.zoomScale;
 			var bWidth = boxSize.width;
 			var bHeight = boxSize.height;
-			var iWidth = imageSize.width;
-			var iHeight = imageSize.height;
+			var iWidth = imageSize.width * zoomScale;
+			var iHeight = imageSize.height * zoomScale;
 			var offsetX = parseInt(getStyle(img, 'marginLeft')) || 0;
 			var offsetY = parseInt(getStyle(img, 'marginTop')) || 0;
 			var deltaX, deltaY, cssText;
 
-			if ( iWidth > bWidth ) {
-				imageSize.width = Math.min(iWidth, naturalSize.width);
-				imageSize.height = Math.min(iHeight, naturalSize.height);
+			if (!opts.lastZoomPoint) opts.lastZoomPoint = zoomPoint;
+			var posX = ((zoomPoint.x-offsetX) * zoomScale/opts.lastZoomScale).toFixed(2);
+			var posY = ((zoomPoint.y-offsetY) * zoomScale/opts.lastZoomScale).toFixed(2);
+			opts.lastZoomPoint = {
+				x : posX,
+				y : posY
+			};
 
-
-			} else {
-				imageSize.width = Math.max(iWidth, bWidth);
-				imageSize.height = Math.max(iHeight, bHeight);
-			}
-			iWidth = imageSize.width;
-			iHeight = imageSize.height;
-
-			deltaX = offsetX -(iWidth - img.width) * (zoomPoint.x/boxSize.width);
-			deltaY = offsetY -(iHeight - img.height) * (zoomPoint.y/boxSize.height);
-			deltaX = Math.max(boxSize.width-imageSize.width, Math.min(deltaX, 0));
-			deltaY = Math.max(boxSize.height-imageSize.height,Math.min(deltaY, 0));
-			cssText = 'width:'+ imageSize.width + 'px;' +
-				'height:'+imageSize.height + 'px;margin-left:' + deltaX +
+			deltaX = zoomPoint.x - posX;
+			deltaY = zoomPoint.y - posY;
+			deltaX = Math.max(boxSize.width-iWidth, Math.min(deltaX, 0));
+			deltaY = Math.max(boxSize.height-iHeight,Math.min(deltaY, 0));
+			cssText = 'width:'+ iWidth + 'px;' +
+				'height:'+ iHeight + 'px;margin-left:' + deltaX +
 					'px;margin-top:' + deltaY + 'px;';
 			img.style.cssText = cssText;
 
@@ -355,9 +350,8 @@ var ZoomPan = (function() {
 			var opts = this.options;
 			var image = opts.image;
 			var boxSize = opts.boxSize;
-			var imageSize = opts.imageSize;
-			image.style.marginLeft = Math.max(boxSize.width-imageSize.width ,Math.min(offsetX, 0)) + 'px';
-			image.style.marginTop = Math.max(boxSize.height-imageSize.height, Math.min(offsetY, 0)) + 'px';
+			image.style.marginLeft = Math.max(boxSize.width-image.width ,Math.min(offsetX, 0)) + 'px';
+			image.style.marginTop = Math.max(boxSize.height-image.height, Math.min(offsetY, 0)) + 'px';
 			this.options.onMove({
 				offsetX: offsetX,
 				offsetY: offsetY
@@ -369,7 +363,7 @@ var ZoomPan = (function() {
 
 	return ZoomPan;
 }());
-require('./zp');
+// require('./zp');
 
 if (typeof module !== 'undefined' && typeof exports !== 'undefined') {
 	module.exports = ZoomPan;

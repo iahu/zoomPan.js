@@ -1,1 +1,3 @@
-*.sublime*
+/dev
+/prd
+/ver
