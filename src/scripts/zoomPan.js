@@ -141,18 +141,6 @@ var ZoomPan = (function() {
 		this.options.image = img;
 		img.draggable = false;
 		box.draggable = false;
-		
-		extend(this.options, {
-			isMouseDown: false,
-			isZoomOut: 0,
-			zoomScale: 1,
-			canMove: false,
-			diff: null,
-			boxSize: null,
-			naturalSize: null,
-			imageSize: null
-		});
-		
 
 		this.init();
 	}
@@ -172,9 +160,22 @@ var ZoomPan = (function() {
 				});
 			}
 		},
+		setDefaultOptions: function () {
+			extend(this.options, {
+				isMouseDown: false,
+				isZoomOut: 0,
+				zoomScale: 1,
+				canMove: false,
+				diff: null,
+				boxSize: null,
+				naturalSize: null,
+				imageSize: null
+			});
+		},
 		initSize: function () {
 			var box = this.options.box;
 			var image = this.options.image;
+			this.setDefaultOptions();
 			this.options.naturalSize = getNaturalSize(image);
 			this.options.imageSize = getImageSize(image);
 			this.options.boxSize = (function () {
@@ -294,8 +295,8 @@ var ZoomPan = (function() {
 			opts.zoomScale += delta / 10;
 			opts.zoomScale = +opts.zoomScale.toFixed(2);
 			this.setImageStyle(opts, zoomPoint);
-			if ( opts.image.width > opts.boxSize.width ) {
-				if (opts.image.width >= opts.naturalSize.width) {
+			if ( opts.zoomScale > opts.minScale ) {
+				if (opts.zoomScale === opts.minScale) {
 					opts.isZoomOut = 2;
 				} else {
 					opts.isZoomOut = 1;
@@ -363,7 +364,6 @@ var ZoomPan = (function() {
 
 	return ZoomPan;
 }());
-// require('./zp');
 
 if (typeof module !== 'undefined' && typeof exports !== 'undefined') {
 	module.exports = ZoomPan;
