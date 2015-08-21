@@ -324,23 +324,37 @@ var ZoomPan = (function() {
 			var iHeight = imageSize.height * zoomScale;
 			var offsetX = parseInt(getStyle(img, 'marginLeft')) || 0;
 			var offsetY = parseInt(getStyle(img, 'marginTop')) || 0;
-			var deltaX, deltaY, cssText;
+			var cssText;
 
-			if (!opts.lastZoomPoint) opts.lastZoomPoint = zoomPoint;
-			var posX = ((zoomPoint.x-offsetX) * zoomScale/opts.lastZoomScale).toFixed(2);
-			var posY = ((zoomPoint.y-offsetY) * zoomScale/opts.lastZoomScale).toFixed(2);
-			opts.lastZoomPoint = {
-				x : posX,
-				y : posY
-			};
+			// if (!opts.lastZoomPoint) opts.lastZoomPoint = zoomPoint;
+			// var posX = ((zoomPoint.x-offsetX) * zoomScale/opts.lastZoomScale).toFixed(2);
+			// var posY = ((zoomPoint.y-offsetY) * zoomScale/opts.lastZoomScale).toFixed(2);
+			// opts.lastZoomPoint = {
+			// 	x : posX,
+			// 	y : posY
+			// };
 
-			deltaX = zoomPoint.x - posX;
-			deltaY = zoomPoint.y - posY;
-			deltaX = Math.max(boxSize.width-iWidth, Math.min(deltaX, 0));
-			deltaY = Math.max(boxSize.height-iHeight,Math.min(deltaY, 0));
+			// deltaX = zoomPoint.x - posX;
+			// deltaY = zoomPoint.y - posY;
+			// deltaX = Math.max(boxSize.width-iWidth, Math.min(deltaX, 0));
+			// deltaY = Math.max(boxSize.height-iHeight,Math.min(deltaY, 0));
+
+			var oPosX = (zoomPoint.x - offsetX);
+			var oPosY = (zoomPoint.y - offsetY);
+			var rPosX = oPosX/img.width;
+			var rPosY = oPosY/img.height;
+			var cPosX = rPosX * iWidth;
+			var cPosY = rPosY * iHeight;
+
+			offsetX = offsetX - (cPosX - oPosX);
+			offsetY = offsetY - (cPosY - oPosY);
+// console.log( cPosX - oPosX, (iWidth - img.width)*rPosX );
+			offsetX = Math.max(boxSize.width-iWidth, Math.min(offsetX, 0));
+			offsetY = Math.max(boxSize.height-iHeight,Math.min(offsetY, 0));
+
 			cssText = 'width:'+ iWidth + 'px;' +
-				'height:'+ iHeight + 'px;margin-left:' + deltaX +
-					'px;margin-top:' + deltaY + 'px;';
+				'height:'+ iHeight + 'px;margin-left:' + offsetX +
+					'px;margin-top:' + offsetY + 'px;';
 			img.style.cssText = cssText;
 
 			imageSize = getImageSize(img);
