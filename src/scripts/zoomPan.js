@@ -1,3 +1,5 @@
+var Size = require('./size.js');
+
 var ZoomPan = (function() {
 	'use strict';
 	function extend(out) {
@@ -205,9 +207,9 @@ var ZoomPan = (function() {
 					x: e.pageX - opts.boxSize.left,
 					y: e.pageY - opts.boxSize.top
 				};
-				if (opts.isZoomOut) {
+				// if (opts.isZoomOut) {
 					that.setIsCanMove(true);
-				}
+				// }
 			}, this));
 			addEvent(document, 'mouseup', proxy(function (event) {
 				opts.diff = null;
@@ -266,6 +268,7 @@ var ZoomPan = (function() {
 				}
 				offsetX += parseInt(opts.image.style.marginLeft);
 				offsetY += parseInt(opts.image.style.marginTop);
+
 				diff.x = pointX;
 				diff.y = pointY;
 
@@ -313,60 +316,49 @@ var ZoomPan = (function() {
 
 		setImageStyle: function (opts, zoomPoint) {
 			var img = opts.image;
-			var boxSize = opts.boxSize;
 			var imageSize = opts.imageSize;
-			var naturalSize = opts.naturalSize;
-			opts.zoomScale = Math.min(opts.maxScale, Math.max(opts.minScale, opts.zoomScale));
-			var zoomScale = opts.zoomScale;
-			var bWidth = boxSize.width;
-			var bHeight = boxSize.height;
-			var iWidth = imageSize.width * zoomScale;
-			var iHeight = imageSize.height * zoomScale;
+			var boxSize = opts.boxSize;
 			var offsetX = parseInt(getStyle(img, 'marginLeft')) || 0;
 			var offsetY = parseInt(getStyle(img, 'marginTop')) || 0;
 			var cssText;
 
-			// if (!opts.lastZoomPoint) opts.lastZoomPoint = zoomPoint;
-			// var posX = ((zoomPoint.x-offsetX) * zoomScale/opts.lastZoomScale).toFixed(2);
-			// var posY = ((zoomPoint.y-offsetY) * zoomScale/opts.lastZoomScale).toFixed(2);
-			// opts.lastZoomPoint = {
-			// 	x : posX,
-			// 	y : posY
-			// };
+			var size = new Size({
+				width: img.width,
+				height: img.height,
+				scaleAt: {
+					x: zoomPoint.x - offsetX,
+					y: zoomPoint.y - offsetY
+				}
+			});
+			var size0 = size.size;
+			var scaleDelta = opts.zoomScale - opts.lastZoomScale;
+			var sizeScaled = size.scale(1+ opts.zoomScale - opts.lastZoomScale ).size;
+			offsetX = (size0.scaleAt.x-sizeScaled.scaleAt.x+offsetX);
+			offsetY = (size0.scaleAt.y-sizeScaled.scaleAt.y+offsetY);
+			if (scaleDelta < 0 && (sizeScaled.width <= imageSize.width || sizeScaled.height <= imageSize.height)) {
+				sizeScaled = size0;
+			}
 
-			// deltaX = zoomPoint.x - posX;
-			// deltaY = zoomPoint.y - posY;
-			// deltaX = Math.max(boxSize.width-iWidth, Math.min(deltaX, 0));
-			// deltaY = Math.max(boxSize.height-iHeight,Math.min(deltaY, 0));
+			offsetX = Math.max(boxSize.width-sizeScaled.width, Math.min(offsetX, 0));
+			offsetY = Math.max(boxSize.height-sizeScaled.height, Math.min(offsetY, 0));
 
-			var oPosX = (zoomPoint.x - offsetX);
-			var oPosY = (zoomPoint.y - offsetY);
-			var rPosX = oPosX/img.width;
-			var rPosY = oPosY/img.height;
-			var cPosX = rPosX * iWidth;
-			var cPosY = rPosY * iHeight;
-
-			offsetX = offsetX - (cPosX - oPosX);
-			offsetY = offsetY - (cPosY - oPosY);
-// console.log( cPosX - oPosX, (iWidth - img.width)*rPosX );
-			offsetX = Math.max(boxSize.width-iWidth, Math.min(offsetX, 0));
-			offsetY = Math.max(boxSize.height-iHeight,Math.min(offsetY, 0));
-
-			cssText = 'width:'+ iWidth + 'px;' +
-				'height:'+ iHeight + 'px;margin-left:' + offsetX +
+			cssText = 'width:'+ sizeScaled.width + 'px;' +
+				'height:'+ sizeScaled.height + 'px;margin-left:' + offsetX +
 					'px;margin-top:' + offsetY + 'px;';
 			img.style.cssText = cssText;
 
-			imageSize = getImageSize(img);
 			return img;
 		},
 
 		move: function (offsetX, offsetY) {
 			var opts = this.options;
 			var image = opts.image;
-			var boxSize = opts.boxSize;
-			image.style.marginLeft = Math.max(boxSize.width-image.width ,Math.min(offsetX, 0)) + 'px';
-			image.style.marginTop = Math.max(boxSize.height-image.height, Math.min(offsetY, 0)) + 'px';
+			// var boxSize = opts.boxSize;
+			// image.style.marginLeft = Math.max(boxSize.width-image.width ,Math.min(offsetX, 0)) + 'px';
+			// image.style.marginTop = Math.max(boxSize.height-image.height, Math.min(offsetY, 0)) + 'px';
+
+			image.style.marginLeft = offsetX + 'px';
+			image.style.marginTop = offsetY + 'px';
 			this.options.onMove({
 				offsetX: offsetX,
 				offsetY: offsetY
@@ -379,7 +371,8 @@ var ZoomPan = (function() {
 	return ZoomPan;
 }());
 
-if (typeof module !== 'undefined' && typeof exports !== 'undefined') {
+if (typeof this.module !== 'undefined' && typeof exports !== 'undefined') {
 	module.exports = ZoomPan;
+} else {
+	window.ZoomPan = ZoomPan;
 }
-window.ZoomPan = ZoomPan;
